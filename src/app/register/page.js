@@ -1,357 +1,160 @@
 "use client";
-
-import React, { useState } from "react";
-import InputField from "../components/InputField";
-import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
+import { useState, useEffect } from "react";
+import { useForm, FormProvider } from "react-hook-form";
 import { useRouter } from "next/navigation";
+import { FaCheckCircle } from "react-icons/fa";
+import { FiCircle } from "react-icons/fi";
+import { IoArrowBack } from "react-icons/io5";
+import RegistrationDetails from "../components/formSections/RegistrationDetails";
+import BasicDetails from "../components/formSections/BasicDetails";
+import BackgroundDetails from "../components/formSections/BackgroundDetails";
+import PhysicalAttributes from "../components/formSections/PhysicalAttributes";
+import AdditionalDetails from "../components/formSections/AdditionalDetails";
+import Navbar from "../components/Navbar";
+
+const sections = [
+  { title: "Registration Details", component: RegistrationDetails },
+  { title: "Basic Details", component: BasicDetails },
+  { title: "Background Details", component: BackgroundDetails },
+  { title: "Physical Attributes", component: PhysicalAttributes },
+  { title: "Additional Details", component: AdditionalDetails },
+];
 
 const RegisterPage = () => {
+  const methods = useForm({ mode: "onBlur" });
+  const [step, setStep] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const router = useRouter();
-  const [form, setForm] = useState({
-    firstName: "",
-    lastName: "",
-    gender: "",
-    maritalStatus: "",
-    dateOfBirth: "",
-    astrologicalSign: "",
-    country: "",
-    city: "",
-    address: "",
-    phone: "",
-    community: "",
-    religion: "",
-    motherTongue: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-    termsAccepted: false,
-  });
 
-  const [notification, setNotification] = useState({ message: "", type: "" });
+  const images = [
+    "/wedding1.jpg",
+    "/wedding2.jpg",
+    "/wedding3.jpg",
+    "/wedding4.jpg",
+    "/wedding5.jpg",
+    "/wedding6.jpg",
+  ];
 
-  const handleInputChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setForm({
-      ...form,
-      [name]: type === "checkbox" ? checked : value,
-    });
+  useEffect(() => {
+    const imageInterval = setInterval(() => {
+      setCurrentImageIndex((prevIndex) =>
+        prevIndex === images.length - 1 ? 0 : prevIndex + 1
+      );
+    }, 2000); // Change image every 2 seconds
+
+    return () => clearInterval(imageInterval);
+  }, [images.length]);
+
+  const CurrentSection = sections[step].component;
+
+  const onSubmit = async (data) => {
+    if (step === sections.length - 1) {
+      setLoading(true);
+      console.log("Form submitted successfully:", data);
+      try {
+        setTimeout(() => {
+          setSuccess(true);
+          setLoading(false);
+          setTimeout(() => router.push("/login"), 2000);
+        }, 1000);
+      } catch (error) {
+        console.error("Submission error: ", error);
+        setLoading(false);
+      }
+    } else {
+      setStep(step + 1);
+    }
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-
-    // Password validation
-    if (form.password !== form.confirmPassword) {
-      setNotification({
-        message: "Passwords do not match!",
-        type: "error",
-      });
-      return;
-    }
-
-    console.log("Form Submitted:", form);
-
-    // Show loading notification
-    setNotification({ message: "Loading...", type: "loading" });
-
-    // Simulating form submission logic (e.g., API call)
-    setTimeout(() => {
-      // Display success notification
-      setNotification({
-        message: "Form submitted successfully!",
-        type: "success",
-      });
-
-      // Redirect to login after 3 seconds
-      setTimeout(() => {
-        router.push("/login"); // Redirect to the login page
-      }, 3000);
-    }, 2000); // Simulate loading time for 2 seconds
+  const handleBack = () => {
+    if (step > 0) setStep(step - 1);
   };
 
   return (
-    <>
-      <div className="flex items-center justify-center min-h-screen bg-black">
-        <Navbar />
-        <div className="bg-dark-gray text-white w-full max-w-7xl p-8 rounded-md shadow-lg mt-20 mb-10">
-          <h1 className="text-2xl font-bold mb-6 text-center">Register</h1>
+    <div className="min-h-screen flex flex-col items-center bg-black text-white">
+      <Navbar />
 
-          {/* Notification Display */}
-          {notification.message && (
-            <div
-              className={`p-4 rounded-md mb-4 flex items-center justify-center ${
-                notification.type === "loading"
-                  ? "bg-yellow-500"
-                  : notification.type === "error"
-                  ? "bg-red-500"
-                  : "bg-green-500"
-              }`}
-            >
-              {notification.type === "loading" ? (
-                <span className="mr-2">🔄</span> // Loading spinner emoji
-              ) : notification.type === "error" ? (
-                <span className="mr-2">❌</span> // Cross mark icon for error
-              ) : (
-                <span className="mr-2">✔️</span> // Checkmark icon
-              )}
-              {notification.message}
-            </div>
-          )}
+      <div className="flex w-full max-w-7xl mt-20 mb-10 px-4">
+        {/* Left Side - Image Slideshow */}
+        <div className="hidden md:block w-2/5">
+          <img
+            src={images[currentImageIndex]}
+            alt="Slideshow"
+            className="object-cover h-5/6 w-full transition-all duration-500 ease-in-out"
+          />
+        </div>
 
-          <form onSubmit={handleSubmit} className="space-y-3">
-            {/* Basic Details */}
-            <div>
-              <h2 className="text-lg font-semibold mb-4">Basic Details</h2>
-              <div className="flex flex-wrap">
-                <InputField
-                  label="First Name"
-                  name="firstName"
-                  value={form.firstName}
-                  onChange={handleInputChange}
-                  required
-                  className="ml-8"
-                />
-                <InputField
-                  label="Last Name"
-                  name="lastName"
-                  value={form.lastName}
-                  onChange={handleInputChange}
-                  required
-                  className="ml-8"
-                />
-                <InputField
-                  label="Gender"
-                  name="gender"
-                  type="select"
-                  options={[
-                    { value: "male", label: "Male" },
-                    { value: "female", label: "Female" },
-                    { value: "other", label: "Other" },
-                  ]}
-                  value={form.gender}
-                  onChange={handleInputChange}
-                  required
-                  className="ml-8"
-                />
-                <InputField
-                  label="Marital Status"
-                  name="maritalStatus"
-                  type="select"
-                  options={[
-                    { value: "single", label: "Single" },
-                    { value: "married", label: "Married" },
-                    { value: "divorced", label: "Divorced" },
-                    { value: "widowed", label: "Widowed" },
-                  ]}
-                  value={form.maritalStatus}
-                  onChange={handleInputChange}
-                  required
-                  className="ml-8"
-                />
-                <InputField
-                  label="Date of Birth"
-                  name="dateOfBirth"
-                  type="date"
-                  value={form.dateOfBirth}
-                  onChange={handleInputChange}
-                  required
-                  className="ml-8"
-                />
-                <InputField
-                  label="Astrological Sign"
-                  name="astrologicalSign"
-                  type="select"
-                  options={[
-                    { value: "aries", label: "Aries" },
-                    { value: "taurus", label: "Taurus" },
-                    { value: "gemini", label: "Gemini" },
-                    { value: "cancer", label: "Cancer" },
-                    { value: "leo", label: "Leo" },
-                    { value: "virgo", label: "Virgo" },
-                    { value: "libra", label: "Libra" },
-                    { value: "scorpio", label: "Scorpio" },
-                    { value: "sagittarius", label: "Sagittarius" },
-                    { value: "capricorn", label: "Capricorn" },
-                    { value: "aquarius", label: "Aquarius" },
-                    { value: "pisces", label: "Pisces" },
-                  ]}
-                  value={form.astrologicalSign}
-                  onChange={handleInputChange}
-                  required
-                  className="ml-8"
-                />
+        {/* Right Side - Form */}
+        <div className="w-full md:w-3/5 p-8">
+          <div className="flex items-center mb-6">
+            {step > 0 && (
+              <button onClick={handleBack} className="mr-2">
+                <IoArrowBack className="text-white text-2xl" />
+              </button>
+            )}
+            <h1 className="text-2xl font-bold text-center flex-grow">
+              Registration Form
+            </h1>
+          </div>
+
+          {/* Step Circles */}
+          <div className="flex items-center justify-between mb-6">
+            {sections.map((section, index) => (
+              <div key={index} className="flex flex-col items-center">
+                {step > index ? (
+                  <FaCheckCircle className="text-green-500 mb-1" />
+                ) : (
+                  <FiCircle
+                    className={`text-${
+                      step === index ? "red-500" : "gray-400"
+                    } mb-1`}
+                  />
+                )}
+                <span className="text-sm text-center">{section.title}</span>
               </div>
-            </div>
+            ))}
+          </div>
 
-            {/* Contact Details */}
-            <div>
-              <h2 className="text-lg font-semibold mb-4">Contact Details</h2>
-              <div className="flex flex-wrap">
-                <InputField
-                  label="Country"
-                  name="country"
-                  type="select"
-                  options={[
-                    { value: "usa", label: "United States" },
-                    { value: "canada", label: "Canada" },
-                    { value: "uk", label: "United Kingdom" },
-                    // Add more countries as needed
-                  ]}
-                  value={form.country}
-                  onChange={handleInputChange}
-                  required
-                  className="ml-8"
-                />
-                <InputField
-                  label="City"
-                  name="city"
-                  type="select"
-                  options={[
-                    { value: "new_york", label: "New York" },
-                    { value: "toronto", label: "Toronto" },
-                    { value: "london", label: "London" },
-                    // Add more cities as needed
-                  ]}
-                  value={form.city}
-                  onChange={handleInputChange}
-                  required
-                  className="ml-8"
-                />
-                <InputField
-                  label="Address"
-                  name="address"
-                  value={form.address}
-                  onChange={handleInputChange}
-                  required
-                  className="ml-8"
-                />
-                <InputField
-                  label="Phone"
-                  name="phone"
-                  type="tel"
-                  value={form.phone}
-                  onChange={handleInputChange}
-                  required
-                  className="ml-8"
-                />
-              </div>
-            </div>
-
-            {/* Community & Religious Background */}
-            <div>
-              <h2 className="text-lg font-semibold mb-4">Diversity Details</h2>
-              <div className="flex flex-wrap">
-                <InputField
-                  label="Community"
-                  name="community"
-                  type="select"
-                  options={[
-                    { value: "community1", label: "Community 1" },
-                    { value: "community2", label: "Community 2" },
-                    // Add more communities as needed
-                  ]}
-                  value={form.community}
-                  onChange={handleInputChange}
-                  required
-                  className="ml-8"
-                />
-                <InputField
-                  label="Religion"
-                  name="religion"
-                  type="select"
-                  options={[
-                    { value: "hinduism", label: "Hinduism" },
-                    { value: "christianity", label: "Christianity" },
-                    { value: "islam", label: "Islam" },
-                    // Add more religions as needed
-                  ]}
-                  value={form.religion}
-                  onChange={handleInputChange}
-                  required
-                  className="ml-8"
-                />
-                <InputField
-                  label="Mother Tongue"
-                  name="motherTongue"
-                  type="select"
-                  options={[
-                    { value: "english", label: "English" },
-                    { value: "spanish", label: "Spanish" },
-                    // Add more languages as needed
-                  ]}
-                  value={form.motherTongue}
-                  onChange={handleInputChange}
-                  required
-                  className="ml-8"
-                />
-              </div>
-            </div>
-
-            {/* Account Credentials */}
-            <div>
-              <h2 className="text-lg font-semibold mb-4">
-                Account Credentials
+          {/* Success Animation */}
+          {success ? (
+            <div className="flex flex-col items-center justify-center p-6 mb-8 bg-green-600 text-white rounded transition-opacity duration-500 ease-in-out">
+              <FaCheckCircle className="text-4xl mb-2" />
+              <h2 className="text-xl font-semibold">
+                Form Submitted Successfully!
               </h2>
-              <div className="flex flex-wrap">
-                <InputField
-                  label="Email"
-                  name="email"
-                  type="email"
-                  value={form.email}
-                  onChange={handleInputChange}
-                  required
-                  className="ml-8"
-                />
-                <InputField
-                  label="Password"
-                  name="password"
-                  type="password"
-                  value={form.password}
-                  onChange={handleInputChange}
-                  required
-                  className="ml-8"
-                />
-                <InputField
-                  label="Confirm Password"
-                  name="confirmPassword"
-                  type="password"
-                  value={form.confirmPassword}
-                  onChange={handleInputChange}
-                  required
-                  className="ml-8"
-                />
-              </div>
+              <p className="text-sm mt-2">Redirecting to login page...</p>
             </div>
-
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                name="termsAccepted"
-                checked={form.termsAccepted}
-                onChange={handleInputChange}
-                className="mr-2"
-                required
-              />
-              <label>
-                I accept the{" "}
-                <a href="/terms" className="text-blue-500 underline">
-                  terms and conditions
-                </a>
-              </label>
-            </div>
-
-            <button
-              type="submit"
-              className="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-2 rounded"
-            >
-              Register
-            </button>
-          </form>
+          ) : (
+            <FormProvider {...methods}>
+              <form onSubmit={methods.handleSubmit(onSubmit)}>
+                <CurrentSection />
+                <div className="flex justify-between mt-8">
+                  <button
+                    type="submit"
+                    className={`px-4 w-full py-2 font-bold rounded ${
+                      loading
+                        ? "bg-gray-500"
+                        : step === sections.length - 1
+                        ? "bg-green-500 hover:bg-green-600"
+                        : "bg-red-500 hover:bg-red-600"
+                    } text-white`}
+                    disabled={loading}
+                  >
+                    {loading
+                      ? "Submitting..."
+                      : step === sections.length - 1
+                      ? "Submit"
+                      : "Next"}
+                  </button>
+                </div>
+              </form>
+            </FormProvider>
+          )}
         </div>
       </div>
-      <Footer />
-    </>
+    </div>
   );
 };
 

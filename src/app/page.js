@@ -302,7 +302,7 @@ export function Pricing() {
                   </li>
                   <li className="flex items-center">
                     <FaTimesCircle className="text-red-500 mr-2" />
-                    Limited Messaging
+                    Unlimited Messaging
                   </li>
                   <li className="flex items-center">
                     <FaCheckCircle className="text-green-500 mr-2" />
