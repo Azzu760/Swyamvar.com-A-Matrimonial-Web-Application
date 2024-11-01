@@ -10,7 +10,7 @@ import BasicDetails from "../components/formSections/BasicDetails";
 import BackgroundDetails from "../components/formSections/BackgroundDetails";
 import PhysicalAttributes from "../components/formSections/PhysicalAttributes";
 import AdditionalDetails from "../components/formSections/AdditionalDetails";
-import Navbar from "../components/Navbar";
+import Navbar from "../components/dashboardSections/Navbar";
 
 const sections = [
   { title: "Registration Details", component: RegistrationDetails },

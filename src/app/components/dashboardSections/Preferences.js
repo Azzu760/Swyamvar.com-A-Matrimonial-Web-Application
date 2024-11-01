@@ -1,69 +1,88 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import dummyUsers from "../data/dummyUsers2";
+import dummyUsers from "../../data/dummyUsers2"; // Make sure you have this data file
 
-const SearchByParameters = () => {
+const Preferences = () => {
   const router = useRouter();
-  const [fromYear, setFromYear] = useState("");
-  const [toYear, setToYear] = useState("");
+  const [age, setAge] = useState("");
+  const [height, setHeight] = useState("");
+  const [bodyType, setBodyType] = useState("");
+  const [complexion, setComplexion] = useState("");
   const [maritalStatus, setMaritalStatus] = useState("");
   const [country, setCountry] = useState("");
   const [city, setCity] = useState("");
   const [religion, setReligion] = useState("");
   const [community, setCommunity] = useState("");
   const [motherTongue, setMotherTongue] = useState("");
-  const [filteredProfiles, setFilteredProfiles] = useState([]);
+  const [highestQualification, setHighestQualification] = useState("");
+  const [diet, setDiet] = useState("");
+  const [filteredProfiles, setfilteredProfiles] = useState([]);
   const [searchPerformed, setSearchPerformed] = useState(false);
 
   const handleSearch = () => {
     const params = {
-      fromYear: fromYear ? parseInt(fromYear) : null,
-      toYear: toYear ? parseInt(toYear) : null,
+      age: age ? parseInt(age) : null,
+      height: height ? parseInt(height) : null,
+      bodyType,
+      complexion,
       maritalStatus,
       country,
       city,
       religion,
       community,
       motherTongue,
+      highestQualification,
+      diet,
     };
 
-    const results = searchUsers(params);
-    setFilteredProfiles(results);
+    const results = searchPreferences(params);
+    setfilteredProfiles(results);
     setSearchPerformed(true);
   };
 
   const handleClearFields = () => {
-    setFromYear("");
-    setToYear("");
+    setAge("");
+    setHeight("");
+    setBodyType("");
+    setComplexion("");
     setMaritalStatus("");
     setCountry("");
     setCity("");
     setReligion("");
     setCommunity("");
     setMotherTongue("");
-    setFilteredProfiles([]);
+    setHighestQualification("");
+    setDiet("");
+    setfilteredProfiles([]);
     setSearchPerformed(false);
   };
 
-  const searchUsers = (params) => {
-    return dummyUsers.filter((user) => {
+  const searchPreferences = (params) => {
+    return dummyUsers.filter((preference) => {
       return (
-        (params.fromYear === null || user.yearOfBirth >= params.fromYear) &&
-        (params.toYear === null || user.yearOfBirth <= params.toYear) &&
+        (params.age === null || preference.age === params.age) &&
+        (params.height === null || preference.height === params.height) &&
+        (params.bodyType === "" || preference.bodyType === params.bodyType) &&
+        (params.complexion === "" ||
+          preference.complexion === params.complexion) &&
         (params.maritalStatus === "" ||
-          user.maritalStatus === params.maritalStatus) &&
-        (params.country === "" || user.country === params.country) &&
-        (params.city === "" || user.city === params.city) &&
-        (params.religion === "" || user.religion === params.religion) &&
-        (params.community === "" || user.community === params.community) &&
+          preference.maritalStatus === params.maritalStatus) &&
+        (params.country === "" || preference.country === params.country) &&
+        (params.city === "" || preference.city === params.city) &&
+        (params.religion === "" || preference.religion === params.religion) &&
+        (params.community === "" ||
+          preference.community === params.community) &&
         (params.motherTongue === "" ||
-          user.motherTongue === params.motherTongue)
+          preference.motherTongue === params.motherTongue) &&
+        (params.highestQualification === "" ||
+          preference.highestQualification === params.highestQualification) &&
+        (params.diet === "" || preference.diet === params.diet)
       );
     });
   };
 
   const handleProfileClick = (id) => {
-    router.push(`/profile/${id}`);
+    router.push(`/profile/${id}`); // Adjust to your routing needs
   };
 
   const renderInput = (label, value, setValue) => (
@@ -96,6 +115,19 @@ const SearchByParameters = () => {
       ))}
     </select>
   );
+
+  const bodyTypeOptions = [
+    { value: "slim", label: "Slim" },
+    { value: "average", label: "Average" },
+    { value: "athletic", label: "Athletic" },
+    { value: "heavy", label: "Heavy" },
+  ];
+
+  const complexionOptions = [
+    { value: "fair", label: "Fair" },
+    { value: "wheatish", label: "Wheatish" },
+    { value: "dark", label: "Dark" },
+  ];
 
   const maritalStatusOptions = [
     { value: "single", label: "Single" },
@@ -135,15 +167,45 @@ const SearchByParameters = () => {
     { value: "english", label: "English" },
   ];
 
+  const highestQualificationOptions = [
+    { value: "none", label: "None" },
+    { value: "highschool", label: "High School" },
+    { value: "bachelor", label: "Bachelor's" },
+    { value: "master", label: "Master's" },
+  ];
+
+  const dietOptions = [
+    { value: "vegetarian", label: "Vegetarian" },
+    { value: "non-vegetarian", label: "Non-Vegetarian" },
+    { value: "vegan", label: "Vegan" },
+  ];
+
   return (
     <>
-      <div className="bg-dark-gray p-4 rounded shadow">
+      <div className="bg-dark-gray p-4 w-3/4 mx-auto rounded shadow">
         <div className="flex flex-col gap-4">
           <div className="grid grid-cols-2 gap-4">
+            <div>{renderInput("Age", age, setAge)}</div>
+            <div>{renderInput("Height (cm)", height, setHeight)}</div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
             <div>
-              {renderInput("From Year of Birth", fromYear, setFromYear)}
+              {renderSelect(
+                "Body Type",
+                bodyTypeOptions,
+                bodyType,
+                setBodyType
+              )}
             </div>
-            <div>{renderInput("To Year of Birth", toYear, setToYear)}</div>
+            <div>
+              {renderSelect(
+                "Complexion",
+                complexionOptions,
+                complexion,
+                setComplexion
+              )}
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -186,6 +248,18 @@ const SearchByParameters = () => {
             </div>
           </div>
 
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              {renderSelect(
+                "Highest Qualification",
+                highestQualificationOptions,
+                highestQualification,
+                setHighestQualification
+              )}
+            </div>
+            <div>{renderSelect("Diet", dietOptions, diet, setDiet)}</div>
+          </div>
+
           <div className="flex gap-2 mt-4">
             <button
               className="bg-red-500 text-white rounded p-2 w-full"
@@ -203,7 +277,7 @@ const SearchByParameters = () => {
         </div>
       </div>
 
-      <div className="mt-4">
+      <div className="mt-4 w-3/4 mx-auto">
         <div className="flex flex-col gap-1">
           {filteredProfiles.length > 0
             ? filteredProfiles.map((profile) => (
@@ -248,4 +322,4 @@ const SearchByParameters = () => {
   );
 };
 
-export default SearchByParameters;
+export default Preferences;

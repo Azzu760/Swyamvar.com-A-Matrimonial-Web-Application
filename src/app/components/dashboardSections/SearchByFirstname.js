@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 import { useRouter } from "next/navigation";
-import dummyUsers from "../data/dummyUsers2"; // Importing dummyUsers data
+import dummyUsers from "../../data/dummyUsers2"; // Importing dummyUsers data
 import { FaSearch, FaTimes } from "react-icons/fa"; // Importing FaSearch and FaTimes
 
 const SearchByFirstname = ({ searchTerm, setSearchTerm }) => {

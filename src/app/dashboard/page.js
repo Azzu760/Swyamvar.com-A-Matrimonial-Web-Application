@@ -1,10 +1,10 @@
 "use client";
 import React, { useState } from "react";
 import { FaHeart, FaFacebookMessenger, FaBell } from "react-icons/fa";
-import Discover from "../components/Discover";
-import Search from "../components/Search";
-import Preferences from "../components/Preferences";
-import Profile from "../components/Profile";
+import Discover from "../components/dashboardSections/Discover";
+import Search from "../components/dashboardSections/Search";
+import Preferences from "../components/dashboardSections/Preferences";
+import Profile from "../components/dashboardSections/Profile";
 
 function Dashboard() {
   const [activeLink, setActiveLink] = useState("Discover");
