@@ -1,0 +1,134 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                  String              @id @default(cuid())
+  email               String              @unique
+  password            String
+  countryCode         String
+  phone               String              @unique
+  isVerified          Boolean             @default(false)
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  profilePicture      String?
+  additionalDetails   AdditionalDetails?
+  backgroundDetails   BackgroundDetails?
+  basicDetails        BasicDetails?
+  receivedConnections Connection[]        @relation("Receiver")
+  connections         Connection[]        @relation("Requester")
+  messagesReceived    Message[]           @relation("Receiver")
+  messagesSent        Message[]           @relation("Sender")
+  notifications       Notification[]
+  physicalAttributes  PhysicalAttributes?
+  status              UserStatus?
+}
+
+model BasicDetails {
+  userId           String       @id @unique
+  firstName        String
+  lastName         String
+  gender           String
+  dateOfBirth      DateTime?
+  maritalStatus    String
+  country          String
+  city             String
+  preferredPartner String?
+  user             User         @relation(fields: [userId], references: [id])
+}
+
+model BackgroundDetails {
+  userId         String    @id @unique
+  religion       String
+  caste          String
+  motherTongue   String
+  community      String
+  educationLevel String
+  fieldOfStudy   String
+  profession     String
+  annualIncome   String
+  user           User      @relation(fields: [userId], references: [id])
+}
+
+model PhysicalAttributes {
+  userId             String   @id @unique
+  height             Float?
+  bodyType           String?
+  complexion         String?
+  physicalDisability String?  
+  hairColor          String?
+  eyeColor           String?
+  weight             Float?
+  skinTone           String?
+  user               User     @relation(fields: [userId], references: [id])
+}
+
+model AdditionalDetails {
+  userId              String   @id @unique
+  diet                String?
+  smokingHabits       String?
+  hobbiesAndInterests String?
+  astrologicalSign    String?
+  bio                 String?
+  facebookLink        String?
+  instagramLink       String?
+  twitterLink         String?
+  user                User     @relation(fields: [userId], references: [id])
+}
+
+model Connection {
+  id          String           @id @default(cuid())
+  requesterId String
+  receiverId  String
+  status      ConnectionStatus @default(pending)  
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  requester User      @relation("Requester", fields: [requesterId], references: [id])
+  receiver  User      @relation("Receiver", fields: [receiverId], references: [id])
+
+  @@unique([requesterId, receiverId])  
+}
+
+
+
+model Message {
+  id         String   @id @default(cuid())
+  senderId   String
+  receiverId String
+  message    String
+  sentAt     DateTime @default(now())
+  isRead     Boolean  @default(false)
+  receiver   User     @relation("Receiver", fields: [receiverId], references: [id])
+  sender     User     @relation("Sender", fields: [senderId], references: [id])
+}
+
+model Notification {
+  id               String   @id @default(cuid())
+  userId           String
+  message          String
+  notificationType String
+  createdAt        DateTime @default(now())
+  isRead           Boolean  @default(false)
+  user             User     @relation(fields: [userId], references: [id])
+}
+
+model UserStatus {
+  userId   String   @id @unique
+  isOnline Boolean  @default(false)
+  lastSeen DateTime?
+  user     User     @relation(fields: [userId], references: [id])
+
+  @@index([userId]) // Index for efficient status lookups
+}
+
+enum ConnectionStatus {
+  pending
+  accepted
+  declined
+}

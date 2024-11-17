@@ -1,233 +1,305 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FaArrowLeft, FaCheckCircle, FaPhoneAlt, FaStar } from "react-icons/fa";
 import SocialMedia from "./SocialMedia";
-import VerificationDetails from "./VerificationDetails";
+import VerificationDetail from "./VerificationDetail";
 
-function Profile() {
+function MyDetail({ params }) {
   const router = useRouter();
-  const [user, setUser] = useState({
-    id: "123",
-    profilePic: "/user/user2.jpg",
-    name: "John Doe",
-    city: "New York",
-    country: "USA",
-    bio: "Loving life and sharing experiences",
-    maritalStatus: "Single",
-    astrologicalSign: "Leo",
-    phone: "+1 234-567-8901",
-    verificationDetails: {
-      idNumber: "",
-      verified: true,
-    },
-    basicDetails: {
-      firstName: "John",
-      lastName: "Doe",
-      gender: "Male",
-      dob: "1990-01-01",
-    },
-    diversityDetails: {
-      country: "USA",
-      city: "New York",
-      addressLine: "123 Main St, New York, NY 10001",
-      community: "Community Name",
-      religion: "Religion Name",
-      motherTongue: "English",
-    },
-    additionalDetails: {
-      qualification: "Bachelor's Degree",
-      diet: "Vegan",
-      height: "6ft",
-      bodyType: "Athletic",
-      complexion: "Fair",
-    },
-    socialMedia: {
-      facebook: "",
-      twitter: "",
-      instagram: "",
-      linkedin: "",
-    },
-  });
+  const { id: userId } = params;
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [editing, setEditing] = useState(false);
+  const [originalUser, setOriginalUser] = useState(null);
 
-  const handleChange = (section, key, value) => {
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (!userId) return;
+      try {
+        setLoading(true);
+        const response = await fetch(`/api/user/${userId}`);
+        if (!response.ok) throw new Error("Failed to fetch user data");
+        const data = await response.json();
+        setUser(data);
+        setOriginalUser(data); // Store original data
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+        setError(error.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchUserData();
+  }, [userId]);
+
+  const handleChange = (key, value) => {
     setUser((prevUser) => ({
       ...prevUser,
-      [section]: {
-        ...prevUser[section],
-        [key]: value,
-      },
+      [key]: value,
     }));
   };
 
   const handleProfilePicChange = (event) => {
     const file = event.target.files[0];
     if (file) {
+      if (!file.type.startsWith("image/")) {
+        setError("Please upload a valid image file.");
+        return;
+      }
       const reader = new FileReader();
       reader.onloadend = () => {
-        setUser({ ...user, profilePic: reader.result });
+        setUser((prevUser) => ({
+          ...prevUser,
+          profilePicture: reader.result,
+        }));
       };
       reader.readAsDataURL(file);
     }
   };
 
-  // Function to save changes (simulated here)
-  const handleSaveChanges = () => {
-    // Code to update the user details in the database
-    console.log("User details saved:", user);
-    // Add your API call here to save the user details to the database
+  const handleSaveChanges = async () => {
+    try {
+      const response = await fetch(`/api/user/${userId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(user),
+      });
+      if (!response.ok) throw new Error("Failed to save changes");
+      const updatedUser = await response.json();
+      setUser(updatedUser);
+      setOriginalUser(updatedUser); // Update original data after save
+      setEditing(false);
+      console.log("User details saved:", updatedUser);
+    } catch (error) {
+      console.error("Error saving user data:", error);
+      setError(error.message);
+    }
   };
 
+  const handleCancelChanges = () => {
+    setUser(originalUser); // Revert to original data
+    setEditing(false);
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-black">
+        <p className="text-white text-2xl font-semibold flex space-x-1">
+          <span>Loading</span>
+          <span className="animate-bounce">.</span>
+          <span className="animate-bounce delay-200">.</span>
+          <span className="animate-bounce delay-400">.</span>
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <div className="w-full mx-auto mt-16 text-white rounded-lg shadow-lg">
-      {/* Navbar */}
-      <nav className="fixed top-0 left-0 w-full bg-dark-gray py-4 pl-6 flex items-center text-white text-lg font-semibold z-10">
+    <div className="w-full mx-auto mt-16 bg-black text-white rounded-lg shadow-lg max-w-9xl">
+      <nav className="fixed top-0 left-0 w-full bg-dark-gray py-4 px-6 flex items-center justify-between text-white text-lg font-semibold shadow-md z-10">
         <button
           onClick={() => router.back()}
-          className="flex items-center justify-center p-2 mr-2"
+          className="p-2 text-white rounded hover:bg-gray-800 transition duration-200"
         >
-          <FaArrowLeft className="text-white" />
+          <FaArrowLeft />
         </button>
-        <span className="flex-grow text-center">My Details</span>
+
+        <span className="absolute left-1/2 transform -translate-x-1/2">
+          My Details
+        </span>
       </nav>
 
-      {/* Main Content */}
-      <div className="flex flex-row justify-between mt-16 py-4 mx-8">
-        {/* Left Section (30% width) */}
-        <div className="w-1/3 p-4 bg-transparent">
-          <div className="text-center relative">
-            <img
-              src={user.profilePic}
-              alt="Profile"
-              className="w-24 h-24 rounded-full mx-auto mb-2 border-2 border-gray-500 cursor-pointer"
-              onClick={() => document.getElementById("fileInput").click()}
-            />
-            <h2 className="text-xl font-semibold flex items-center justify-center">
-              {user.name}
-              {user.verificationDetails.verified && (
-                <FaCheckCircle className="text-blue-500 ml-2" />
-              )}
-            </h2>
-            <p className="text-gray-300">{`${user.city}, ${user.country}`}</p>
+      <div className="flex flex-col lg:flex-row justify-between mt-20 lg:mt-24 py-8 px-8">
+        <div className="w-full lg:w-1/3 p-6 rounded-lg shadow-md text-center relative">
+          <img
+            src={user.profilePicture || "/default-profile-pic.png"}
+            alt="Profile"
+            className="w-28 h-28 rounded-full mx-auto mb-2 border-4 border-gray-600 cursor-pointer hover:opacity-90 transition duration-200"
+            onClick={() => document.getElementById("fileInput").click()}
+          />
+
+          <h2 className="text-xl font-semibold flex items-center justify-center">
+            {user.name}
+            {user.isVerified && (
+              <FaCheckCircle className="text-blue-500 ml-2" />
+            )}
+          </h2>
+          <p className="text-gray-400">{`${user.city}, ${user.country}`}</p>
+          {editing ? (
             <input
               type="text"
-              className="bg-transparent text-center border-b border-transparent focus:border-gray-500 focus:outline-none text-white w-full transition duration-200"
+              className="bg-transparent text-center border-b border-red-500 focus:outline-none text-white w-full mt-2"
               value={user.bio}
-              onChange={(e) => handleChange("bio", "bio", e.target.value)}
+              onChange={(e) => handleChange("bio", e.target.value)}
               placeholder="Your bio"
             />
+          ) : (
+            <p>{user.bio}</p>
+          )}
+          <p className="mt-2 bg-red-600 text-white py-1 px-2 rounded-md inline-block text-sm font-medium">
+            {user.maritalStatus}
+          </p>
+          <p className="mt-3 flex justify-center items-center text-gray-300">
+            <FaPhoneAlt className="mr-1" />
+            {user.countryCode}-{user.phone}
+          </p>
+          <p className="mt-3 mb-2 flex justify-center items-center text-gray-300">
+            <FaStar className="mr-1" />
+            Astrological Sign: {user.astrologicalSign}
+          </p>
+          <SocialMedia
+            userId={user.id}
+            facebookLink={user.facebookLink}
+            instagramLink={user.instagramLink}
+            twitterLink={user.twitterLink}
+            handleChange={handleChange}
+          />
 
-            <div className="bg-red-500 text-white py-1 px-2 mt-2 rounded-md inline-block">
-              {user.maritalStatus}
-            </div>
-            <p className="mt-2 flex justify-center items-center">
-              <FaPhoneAlt className="mr-1" />
-              {user.phone}
-            </p>
-            <p className="mt-2 flex justify-center items-center">
-              <FaStar className="mr-1" />
-              Astrological Sign: {user.astrologicalSign}
-            </p>
-
-            {/* Social Media Component */}
-            <SocialMedia
-              socialMedia={user.socialMedia}
-              handleChange={handleChange}
-            />
-
-            {/* Verification Details Component */}
-            <VerificationDetails
-              verificationDetails={user.verificationDetails}
-              handleChange={handleChange}
-            />
+          <div className="flex justify-center py-6 space-x-4">
+            {editing ? (
+              <>
+                <button
+                  onClick={handleSaveChanges}
+                  className="bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg hover:bg-green-600 transition duration-200"
+                >
+                  Save Changes
+                </button>
+                <button
+                  onClick={handleCancelChanges}
+                  className="bg-gray-500 text-white py-2 px-4 rounded-lg shadow-lg hover:bg-gray-600 transition duration-200"
+                >
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => setEditing(true)}
+                className="bg-blue-500 w-[400px] text-white py-2 px-8 rounded-lg shadow-lg hover:bg-blue-600 transition duration-200"
+              >
+                Edit Profile
+              </button>
+            )}
           </div>
+
+          <VerificationDetail verified={user.isVerified} userId={user.id} />
+
+          <input
+            type="file"
+            accept="image/*"
+            id="fileInput"
+            className="hidden"
+            onChange={handleProfilePicChange}
+          />
         </div>
 
-        {/* Divider */}
-        <div className="w-px bg-gray-600 mx-4"></div>
+        <div className="hidden lg:block w-px bg-gray-600 mx-8"></div>
 
-        {/* Right Section (70% width) */}
-        <div className="w-2/3 p-4 space-y-6">
-          {/* Basic Details */}
-          <div>
-            <h3 className="text-lg font-semibold mb-2">Basic Details</h3>
-            <div className="text-sm flex flex-col space-y-2">
-              {Object.entries(user.basicDetails).map(([key, value]) => (
-                <div key={key} className="flex justify-between">
-                  <label className="capitalize">{key}:</label>
-                  <input
-                    type="text"
-                    className="bg-transparent border-b border-transparent focus:border-gray-500 focus:outline-none text-white text-right transition duration-200"
-                    value={value}
-                    onChange={(e) =>
-                      handleChange("basicDetails", key, e.target.value)
-                    }
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-          <hr className="border-gray-600" />
+        <div className="w-full lg:w-2/3 p-6 rounded-lg shadow-md mt-8 lg:mt-0 space-y-4">
+          <UserSection
+            title="Basic Details"
+            details={[
+              { label: "Age", value: user.age, key: "age" },
+              { label: "Gender", value: user.gender, key: "gender" },
+              {
+                label: "Date of Birth",
+                value: user.dateOfBirth,
+                key: "dateOfBirth",
+              },
+              {
+                label: "Preferred Partner",
+                value: user.preferredPartner,
+                key: "preferredPartner",
+              },
+            ]}
+            editable={editing}
+            handleChange={handleChange}
+          />
 
-          {/* Diversity Details */}
-          <div>
-            <h3 className="text-lg font-semibold mb-2">Diversity Details</h3>
-            <div className="text-sm space-y-2">
-              {Object.entries(user.diversityDetails).map(([key, value]) => (
-                <div key={key} className="flex justify-between">
-                  <label className="capitalize">{key}:</label>
-                  <input
-                    type="text"
-                    className="bg-transparent border-b border-transparent focus:border-gray-500 focus:outline-none text-white text-right transition duration-200"
-                    value={value}
-                    onChange={(e) =>
-                      handleChange("diversityDetails", key, e.target.value)
-                    }
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-          <hr className="border-gray-600" />
+          <hr className="border-gray-600 my-4" />
 
-          {/* Additional Details */}
-          <div>
-            <h3 className="text-lg font-semibold mb-2">Additional Details</h3>
-            <div className="text-sm space-y-2">
-              {Object.entries(user.additionalDetails).map(([key, value]) => (
-                <div key={key} className="flex justify-between">
-                  <label className="capitalize">{key}:</label>
-                  <input
-                    type="text"
-                    className="bg-transparent border-b border-transparent focus:border-gray-500 focus:outline-none text-white text-right transition duration-200"
-                    value={value}
-                    onChange={(e) =>
-                      handleChange("additionalDetails", key, e.target.value)
-                    }
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
+          <UserSection
+            title="Background Details"
+            details={[
+              { label: "Religion", value: user.religion, key: "religion" },
+              { label: "Caste", value: user.caste, key: "caste" },
+              {
+                label: "Mother Tongue",
+                value: user.motherTongue,
+                key: "motherTongue",
+              },
+              {
+                label: "Education Level",
+                value: user.educationLevel,
+                key: "educationLevel",
+              },
+              {
+                label: "Profession",
+                value: user.profession,
+                key: "profession",
+              },
+              {
+                label: "Annual Income",
+                value: user.annualIncome,
+                key: "annualIncome",
+              },
+            ]}
+            editable={editing}
+            handleChange={handleChange}
+          />
 
-          {/* Save Changes Button */}
-          <div className="flex justify-center mt-4">
-            <button
-              onClick={handleSaveChanges}
-              className="w-full bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-600 transition duration-300"
-            >
-              Save Changes
-            </button>
-          </div>
+          <hr className="border-gray-600 my-4" />
 
-          {/* Hidden Input for Profile Picture */}
-          <input
-            id="fileInput"
-            type="file"
-            className="hidden"
-            accept="image/*"
-            onChange={handleProfilePicChange}
+          <UserSection
+            title="Physical Attributes"
+            details={[
+              { label: "Height", value: `${user.height} ft`, key: "height" },
+              { label: "Body Type", value: user.bodyType, key: "bodyType" },
+              {
+                label: "Complexion",
+                value: user.complexion,
+                key: "complexion",
+              },
+              { label: "Hair Color", value: user.hairColor, key: "hairColor" },
+              { label: "Eye Color", value: user.eyeColor, key: "eyeColor" },
+              { label: "Weight", value: `${user.weight} Kg`, key: "weight" },
+              { label: "Skin Tone", value: user.skinTone, key: "skinTone" },
+              {
+                label: "Physical Disability",
+                value: user.physicalDisability,
+                key: "physicalDisability",
+              },
+            ]}
+            editable={editing}
+            handleChange={handleChange}
+          />
+
+          <hr className="border-gray-600 my-4" />
+
+          <UserSection
+            title="Additional Details"
+            details={[
+              { label: "Diet", value: user.diet, key: "diet" },
+              {
+                label: "Smoking Habit",
+                value: user.smokingHabits,
+                key: "smokingHabit",
+              },
+              {
+                label: "Hobby and Interest",
+                value: user.hobbiesAndInterests,
+                key: "hobbyAndInterest",
+              },
+              {
+                label: "Astrological Sign",
+                value: user.astrologicalSign,
+                key: "astrologicalSign",
+              },
+            ]}
+            editable={editing}
+            handleChange={handleChange}
           />
         </div>
       </div>
@@ -235,4 +307,31 @@ function Profile() {
   );
 }
 
-export default Profile;
+const UserSection = ({ title, details, editable, handleChange }) => (
+  <div className="mb-6">
+    <h3 className="text-lg font-semibold mb-4">{title}</h3>
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 justify-items-between">
+      {" "}
+      {/* Aligns items to the end */}
+      {details.map(({ label, value, key }) => (
+        <div key={key} className="w-full sm:w-auto">
+          {" "}
+          {/* Width adjusted to fit content */}
+          <label className="text-sm text-gray-400">{label}</label>
+          {editable ? (
+            <input
+              type="text"
+              value={value}
+              onChange={(e) => handleChange(key, e.target.value)}
+              className="w-full p-2 bg-transparent border-b border-red-500 text-white focus:outline-none"
+            />
+          ) : (
+            <p className="text-gray-200">{value}</p>
+          )}
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+export default MyDetail;
