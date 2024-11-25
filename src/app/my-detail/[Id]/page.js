@@ -1,39 +1,79 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { useRef } from "react";
 import { useRouter } from "next/navigation";
 import { FaArrowLeft, FaCheckCircle, FaPhoneAlt, FaStar } from "react-icons/fa";
 import SocialMedia from "./SocialMedia";
 import VerificationDetail from "./VerificationDetail";
 
 function MyDetail({ params }) {
+  const fileInputRef = useRef(null);
   const router = useRouter();
   const { id: userId } = params;
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState({
+    isVerified: false,
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [editing, setEditing] = useState(false);
   const [originalUser, setOriginalUser] = useState(null);
 
+  const fetchUserData = async () => {
+    if (!userId) return;
+    try {
+      setLoading(true);
+      const response = await fetch(`/api/user/${userId}`);
+      if (!response.ok) throw new Error("Failed to fetch user data");
+      const data = await response.json();
+      setUser(data);
+      setOriginalUser(data);
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchUserData = async () => {
-      if (!userId) return;
-      try {
-        setLoading(true);
-        const response = await fetch(`/api/user/${userId}`);
-        if (!response.ok) throw new Error("Failed to fetch user data");
-        const data = await response.json();
-        setUser(data);
-        setOriginalUser(data); // Store original data
-      } catch (error) {
-        console.error("Error fetching user data:", error);
-        setError(error.message);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchUserData();
   }, [userId]);
+
+  const updateProfilePicture = async (userId, file) => {
+    if (!file) {
+      setError("No file selected. Please choose a profile picture.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("userId", userId); // Append user ID
+    formData.append("profilePicture", file); // Append the file
+
+    try {
+      setLoading(true); // Show loading indicator
+      const response = await fetch("/api/updateProfilePicture", {
+        method: "PUT",
+        body: formData, // Send the formData with the file
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.message || "Failed to update profile picture.");
+      }
+
+      // Update the user profile with the new profile picture URL
+      setUser((prev) => ({ ...prev, profilePicture: result.profilePicture }));
+      setError(null); // Clear previous errors
+    } catch (err) {
+      console.error("Error updating profile picture:", err.message);
+      setError(
+        err.message || "Could not update profile picture. Please try again."
+      );
+    } finally {
+      setLoading(false); // Hide loading indicator
+    }
+  };
 
   const handleChange = (key, value) => {
     setUser((prevUser) => ({
@@ -42,37 +82,61 @@ function MyDetail({ params }) {
     }));
   };
 
-  const handleProfilePicChange = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      if (!file.type.startsWith("image/")) {
-        setError("Please upload a valid image file.");
-        return;
-      }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setUser((prevUser) => ({
-          ...prevUser,
-          profilePicture: reader.result,
-        }));
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
   const handleSaveChanges = async () => {
     try {
+      const updatedData = {
+        basicDetails: {
+          maritalStatus: user.maritalStatus,
+          city: user.city,
+          country: user.country,
+        },
+        backgroundDetails: {
+          religion: user.religion,
+          caste: user.caste,
+          motherTongue: user.motherTongue,
+          educationLevel: user.educationLevel,
+          profession: user.profession,
+          annualIncome: user.annualIncome,
+        },
+        physicalAttributes: {
+          height: user.height,
+          bodyType: user.bodyType,
+          complexion: user.complexion,
+          hairColor: user.hairColor,
+          eyeColor: user.eyeColor,
+          weight: user.weight,
+          skinTone: user.skinTone,
+          physicalDisability: user.physicalDisability,
+        },
+        additionalDetails: {
+          diet: user.diet,
+          smokingHabits: user.smokingHabits,
+          hobbiesAndInterests: user.hobbiesAndInterests,
+          astrologicalSign: user.astrologicalSign,
+          bio: user.bio,
+        },
+      };
+
       const response = await fetch(`/api/user/${userId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(user),
+        body: JSON.stringify(updatedData),
       });
-      if (!response.ok) throw new Error("Failed to save changes");
-      const updatedUser = await response.json();
+
+      if (!response.ok) {
+        const errorResponse = await response.json();
+        throw new Error(`Failed to save changes: ${errorResponse.message}`);
+      }
+
+      const fetchResponse = await fetch(`/api/user/${userId}`);
+      if (!fetchResponse.ok) {
+        throw new Error("Failed to fetch updated user details.");
+      }
+
+      const updatedUser = await fetchResponse.json();
       setUser(updatedUser);
-      setOriginalUser(updatedUser); // Update original data after save
-      setEditing(false);
-      console.log("User details saved:", updatedUser);
+      setOriginalUser(updatedUser); // Reset originalUser for changes comparison
+      setEditing(false); // Exit editing mode
     } catch (error) {
       console.error("Error saving user data:", error);
       setError(error.message);
@@ -114,12 +178,23 @@ function MyDetail({ params }) {
 
       <div className="flex flex-col lg:flex-row justify-between mt-20 lg:mt-24 py-8 px-8">
         <div className="w-full lg:w-1/3 p-6 rounded-lg shadow-md text-center relative">
-          <img
-            src={user.profilePicture || "/default-profile-pic.png"}
-            alt="Profile"
-            className="w-28 h-28 rounded-full mx-auto mb-2 border-4 border-gray-600 cursor-pointer hover:opacity-90 transition duration-200"
-            onClick={() => document.getElementById("fileInput").click()}
-          />
+          <div className="flex justify-center rounded-full mb-4">
+            {user.profilePicture ? (
+              <img
+                src={user.profilePicture}
+                alt="Profile"
+                className="w-28 h-28 rounded-full cursor-pointer outline-4 outline-blue-500 outline-offset-1 border-4 border-white"
+                onClick={() => fileInputRef.current.click()}
+              />
+            ) : (
+              <img
+                src="/default-profile-pic.png"
+                alt="Default Profile"
+                className="w-28 h-28 rounded-full cursor-pointer outline-4 outline-blue-500 outline-offset-1 border-4 border-white"
+                onClick={() => fileInputRef.current.click()}
+              />
+            )}
+          </div>
 
           <h2 className="text-xl font-semibold flex items-center justify-center">
             {user.name}
@@ -157,7 +232,6 @@ function MyDetail({ params }) {
             twitterLink={user.twitterLink}
             handleChange={handleChange}
           />
-
           <div className="flex justify-center py-6 space-x-4">
             {editing ? (
               <>
@@ -177,21 +251,19 @@ function MyDetail({ params }) {
             ) : (
               <button
                 onClick={() => setEditing(true)}
-                className="bg-blue-500 w-[400px] text-white py-2 px-8 rounded-lg shadow-lg hover:bg-blue-600 transition duration-200"
+                className="bg-blue-500 w-[450px] text-white py-2 px-8 rounded-lg shadow-lg hover:bg-blue-600 transition duration-200"
               >
                 Edit Profile
               </button>
             )}
           </div>
-
           <VerificationDetail verified={user.isVerified} userId={user.id} />
-
           <input
             type="file"
             accept="image/*"
-            id="fileInput"
-            className="hidden"
-            onChange={handleProfilePicChange}
+            ref={fileInputRef}
+            style={{ display: "none" }}
+            onChange={(e) => updateProfilePicture(user.id, e.target.files[0])}
           />
         </div>
 
@@ -214,8 +286,6 @@ function MyDetail({ params }) {
                 key: "preferredPartner",
               },
             ]}
-            editable={editing}
-            handleChange={handleChange}
           />
 
           <hr className="border-gray-600 my-4" />
@@ -255,7 +325,11 @@ function MyDetail({ params }) {
           <UserSection
             title="Physical Attributes"
             details={[
-              { label: "Height", value: `${user.height} ft`, key: "height" },
+              {
+                label: "Height (in feet)",
+                value: `${user.height}`,
+                key: "height",
+              },
               { label: "Body Type", value: user.bodyType, key: "bodyType" },
               {
                 label: "Complexion",
@@ -264,7 +338,11 @@ function MyDetail({ params }) {
               },
               { label: "Hair Color", value: user.hairColor, key: "hairColor" },
               { label: "Eye Color", value: user.eyeColor, key: "eyeColor" },
-              { label: "Weight", value: `${user.weight} Kg`, key: "weight" },
+              {
+                label: "Weight (in Kg)",
+                value: `${user.weight}`,
+                key: "weight",
+              },
               { label: "Skin Tone", value: user.skinTone, key: "skinTone" },
               {
                 label: "Physical Disability",
@@ -310,23 +388,19 @@ function MyDetail({ params }) {
 const UserSection = ({ title, details, editable, handleChange }) => (
   <div className="mb-6">
     <h3 className="text-lg font-semibold mb-4">{title}</h3>
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 justify-items-between">
-      {" "}
-      {/* Aligns items to the end */}
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
       {details.map(({ label, value, key }) => (
-        <div key={key} className="w-full sm:w-auto">
-          {" "}
-          {/* Width adjusted to fit content */}
-          <label className="text-sm text-gray-400">{label}</label>
+        <div key={key} className="flex flex-col">
+          <label className="text-gray-400">{label}</label>
           {editable ? (
             <input
               type="text"
               value={value}
               onChange={(e) => handleChange(key, e.target.value)}
-              className="w-full p-2 bg-transparent border-b border-red-500 text-white focus:outline-none"
+              className="bg-transparent border border-gray-600 text-white py-1 px-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           ) : (
-            <p className="text-gray-200">{value}</p>
+            <span>{value || "Not specified"}</span>
           )}
         </div>
       ))}

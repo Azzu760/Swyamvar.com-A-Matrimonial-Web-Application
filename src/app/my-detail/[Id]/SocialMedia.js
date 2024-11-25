@@ -37,30 +37,43 @@ const SocialMedia = ({
   // Toggle edit mode and save changes
   const toggleEditMode = async (platform) => {
     if (isEditing[platform]) {
+      // Map frontend platform names to backend field names
+      const platformMapping = {
+        facebook: "facebookLink",
+        twitter: "twitterLink",
+        instagram: "instagramLink",
+      };
+
+      const backendPlatform = platformMapping[platform]; // Get correct field name
+
       // Save updated link to the database
       try {
-        const response = await fetch("/api/updateSocialLink", {
+        const response = await fetch("/api/updateSocialLinks", {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
             userId,
-            platform,
+            platform: backendPlatform, // Use correct field name here
             link: inputLinks[platform],
           }),
         });
 
         if (!response.ok) {
+          const errorMessage = await response.text();
+          console.error(`Error: ${errorMessage}`);
           throw new Error("Failed to update link");
         }
 
-        handleChange(inputLinks); // update parent component
+        // Update parent component after successful update
+        handleChange(inputLinks);
       } catch (error) {
         console.error("Error updating link:", error);
       }
     }
 
+    // Toggle the edit mode for the platform
     setIsEditing((prev) => ({
       ...prev,
       [platform]: !prev[platform],
@@ -71,36 +84,22 @@ const SocialMedia = ({
   const renderSocialMediaLink = (link, platform) => (
     <div
       key={platform}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        marginBottom: "8px",
-        borderRadius: "8px",
-        padding: "8px",
-        background: "#f9f9f9",
-        color: "black",
-        boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
-      }}
+      className="flex items-center justify-between space-x-3 text-gray-800 mb-2 p-2 rounded-lg bg-gray-100 shadow-sm"
     >
       <a
         href={link}
         target="_blank"
         rel="noopener noreferrer"
-        style={{
-          display: "flex",
-          alignItems: "center",
-          color: "inherit",
-          textDecoration: "none",
-        }}
+        className="flex items-center text-gray-800 no-underline"
       >
         {platform === "facebook" && (
-          <FaFacebook style={{ fontSize: "24px", color: "#3b5998" }} />
+          <FaFacebook className="text-2xl text-blue-600" />
         )}
         {platform === "twitter" && (
-          <FaTwitter style={{ fontSize: "24px", color: "#1DA1F2" }} />
+          <FaTwitter className="text-2xl text-blue-400" />
         )}
         {platform === "instagram" && (
-          <FaInstagram style={{ fontSize: "24px", color: "#C13584" }} />
+          <FaInstagram className="text-2xl text-pink-600" />
         )}
       </a>
 
@@ -110,28 +109,15 @@ const SocialMedia = ({
           value={inputLinks[platform]}
           onChange={(e) => handleInputChange(e, platform)}
           placeholder={`Enter ${platform} link`}
-          style={{
-            marginLeft: "12px",
-            padding: "4px",
-            border: "1px solid #ccc",
-            borderRadius: "4px",
-            width: "80%",
-            fontSize: "14px",
-          }}
+          className="ml-3 p-2 border border-gray-300 rounded-md w-3/4 text-sm"
         />
       ) : (
-        <span style={{ marginLeft: "12px", fontSize: "16px" }}>{link}</span>
+        <span className="ml-3 text-sm">{link}</span>
       )}
 
       <button
         onClick={() => toggleEditMode(platform)}
-        style={{
-          marginLeft: "8px",
-          background: "transparent",
-          border: "none",
-          cursor: "pointer",
-          color: isEditing[platform] ? "#4CAF50" : "#333",
-        }}
+        className="ml-3 p-2 rounded-md text-sm text-gray-800 hover:text-green-500"
       >
         {isEditing[platform] ? <FaSave /> : <FaEdit />}
       </button>
@@ -139,17 +125,8 @@ const SocialMedia = ({
   );
 
   return (
-    <div
-      style={{
-        padding: "20px",
-        borderRadius: "10px",
-        background: "#fff",
-        boxShadow: "0 4px 10px rgba(0, 0, 0, 0.1)",
-        maxWidth: "400px",
-        margin: "0 auto",
-      }}
-    >
-      <h3 style={{ marginBottom: "20px", fontSize: "20px", color: "#333" }}>
+    <div className="p-6 rounded-xl bg-white shadow-md max-w-md mx-auto">
+      <h3 className="text-lg font-semibold text-gray-800 mb-4">
         Social Media Links
       </h3>
       {renderSocialMediaLink(inputLinks.facebook, "facebook")}

@@ -27,10 +27,18 @@ function Profile({ userId }) {
     {
       icon: <FaLock />,
       label: "Change Password",
-      path: `/change-password/${userId}`,
+      onClick: () => router.push(`/change-password/${userId}`),
     },
-    { icon: <FaQuestionCircle />, label: "Get Help", path: `/get-help` },
-    { icon: <FaInfoCircle />, label: "About Us", path: `/about-us` },
+    {
+      icon: <FaQuestionCircle />,
+      label: "Get Help",
+      onClick: () => window.open("/get-help", "_blank"),
+    },
+    {
+      icon: <FaInfoCircle />,
+      label: "About Us",
+      onClick: () => window.open("/about-us", "_blank"),
+    },
     {
       icon: <FaSignOutAlt className="text-red-500" />,
       label: "Logout",
@@ -104,7 +112,7 @@ function Profile({ userId }) {
         <p className="text-gray-400 mt-1">
           {userDetails.bio || "Bio not provided."}
         </p>
-        <div className="bg-red-500 text-white py-1 px-2 mt-2 rounded-md w-1/4 inline-block">
+        <div className="bg-red-500 text-white py-1 px-2 mt-2 rounded-md w-1/3 md:w-1/5 inline-block">
           {userDetails.maritalStatus || "Marital Status not provided"}
         </div>
       </div>

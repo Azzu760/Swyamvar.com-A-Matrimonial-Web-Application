@@ -1,8 +1,13 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { FaHeart, FaFacebookMessenger, FaBell } from "react-icons/fa";
-import { useRouter } from "next/navigation"; // Import the useRouter hook
+import {
+  FaHeart,
+  FaFacebookMessenger,
+  FaBell,
+  FaRegBell,
+} from "react-icons/fa";
+import { useRouter } from "next/navigation";
 import Discover from "../../../components/dashboardSections/Discover";
 import Search from "../../../components/dashboardSections/Search";
 import Preferences from "../../../components/dashboardSections/Preferences";
@@ -12,15 +17,35 @@ function Dashboard({ params }) {
   const { userId } = params; // Logged-in user's ID
   const [activeLink, setActiveLink] = useState("Discover");
   const [loading, setLoading] = useState(false);
-  const router = useRouter(); // Initialize the router
+  const [hasNotifications, setHasNotifications] = useState(false); // Notification state
+  const router = useRouter();
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const response = await fetch(`/api/notifications?userId=${userId}`);
+        if (!response.ok) throw new Error("Failed to fetch notifications");
+
+        const data = await response.json();
+        setHasNotifications(data.notificationCount > 0);
+      } catch (error) {
+        console.error("Error fetching notifications:", error);
+      }
+    };
+
+    fetchNotifications();
+  }, [userId]);
 
   const handleLinkClick = (link) => {
     setActiveLink(link);
   };
 
   const navigateToNotifications = () => {
-    // Navigate to the /notifications page when the bell icon is clicked
-    router.push("/notifications?userId=${userId}");
+    router.push(`/notifications/${userId}`);
+  };
+
+  const navigateToMessenger = () => {
+    router.push(`/messenger/${userId}`);
   };
 
   return (
@@ -51,11 +76,11 @@ function Dashboard({ params }) {
           </div>
           <div className="flex items-center">
             <div className="flex justify-between gap-3 sm:gap-5">
-              <a href="/message">
+              <button onClick={navigateToMessenger}>
                 <FaFacebookMessenger />
-              </a>
+              </button>
               <button onClick={navigateToNotifications}>
-                <FaBell />
+                {hasNotifications ? <FaBell /> : <FaRegBell />}
               </button>
             </div>
           </div>

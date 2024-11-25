@@ -9,3 +9,12 @@ body {
   color: #ffff;
   box-sizing: border-box;
 }
+
+.scrollbar-hidden {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scrollbar-hidden::-webkit-scrollbar {
+  display: none;
+}

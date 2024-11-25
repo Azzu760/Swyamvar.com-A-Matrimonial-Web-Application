@@ -85,7 +85,7 @@ model Connection {
   id          String           @id @default(cuid())
   requesterId String
   receiverId  String
-  status      ConnectionStatus @default(pending)  
+  status      ConnectionStatus @default(connect)  
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
 
@@ -124,10 +124,11 @@ model UserStatus {
   lastSeen DateTime?
   user     User     @relation(fields: [userId], references: [id])
 
-  @@index([userId]) // Index for efficient status lookups
+  @@index([userId]) 
 }
 
 enum ConnectionStatus {
+  connect
   pending
   accepted
   declined

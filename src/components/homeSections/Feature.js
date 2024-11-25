@@ -1,10 +1,10 @@
 "use client";
 import { useState } from "react";
-import { FaHeart, FaLightbulb, FaSearch } from "react-icons/fa";
+import { FaHeart, FaLightbulb, FaSearch, FaComments } from "react-icons/fa";
 import { FiArrowRight, FiArrowLeft } from "react-icons/fi";
 
 export default function Feature() {
-  const [flipped, setFlipped] = useState(Array(3).fill(false));
+  const [flipped, setFlipped] = useState(Array(4).fill(false));
 
   const features = [
     {
@@ -31,6 +31,14 @@ export default function Feature() {
         "Search for your ideal partner based on detailed preferences. Our advanced filtering options allow you to fine-tune your search results, bringing you closer to your soulmate. Specify interests, lifestyle, and values, ensuring that your search is tailored to your unique desires.",
       bgColor: "bg-blue-500",
     },
+    {
+      icon: <FaComments className="text-white text-3xl sm:text-4xl" />,
+      title: "Real-Time Chat",
+      description1: "Instant Communication",
+      description2:
+        "Connect with potential matches instantly using our real-time chat feature. Share your thoughts, ask questions, and build a connection in a seamless and secure environment. Our chat feature ensures privacy and responsiveness, giving you the confidence to engage with your matches effortlessly.",
+      bgColor: "bg-green-500",
+    },
   ];
 
   const handleFlip = (index) => {
@@ -44,7 +52,7 @@ export default function Feature() {
           Our Features
         </h2>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {features.map((feature, index) => (
             <div key={index} className="relative w-full p-6 sm:p-8">
               <div

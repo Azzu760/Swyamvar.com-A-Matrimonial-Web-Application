@@ -1,8 +1,5 @@
 import prisma from "../../../../lib/prisma";
-import {
-  getUserDetailsForRecommendation,
-  calculateCompatibilityScore,
-} from "../../../../utils/compatibilityScore";
+import { getUserDetailsForRecommendation } from "../../../../utils/compatibilityScore/getUserDetailsForRecommendation";
 
 // Helper function to calculate age from date of birth
 function calculateAge(dateOfBirth) {
@@ -19,8 +16,22 @@ function calculateAge(dateOfBirth) {
   return age;
 }
 
+// Helper function to find connection status (optimized)
+const findConnectionStatus = async (userId, profileId) => {
+  const connection = await prisma.connection.findFirst({
+    where: {
+      OR: [
+        { requesterId: userId, receiverId: profileId },
+        { receiverId: userId, requesterId: profileId },
+      ],
+    },
+  });
+  return connection ? connection.status : "connect";
+};
+
 export async function GET(req) {
-  const userId = req.headers.get("x-user-id");
+  const url = new URL(req.url);
+  const userId = url.searchParams.get("userId");
 
   if (!userId) {
     return new Response(JSON.stringify({ message: "User ID is required." }), {
@@ -30,14 +41,11 @@ export async function GET(req) {
   }
 
   try {
-    // Fetch the logged-in user's details
     const loggedInUser = await prisma.user.findUnique({
       where: { id: userId },
       include: {
         basicDetails: true,
         backgroundDetails: true,
-        physicalAttributes: true,
-        additionalDetails: true,
       },
     });
 
@@ -48,69 +56,113 @@ export async function GET(req) {
       });
     }
 
-    // Format the logged-in user's details
     const formattedLoggedInUser = await getUserDetailsForRecommendation(
       loggedInUser
     );
 
-    // Fetch profiles of the opposite gender with matching criteria
+    const filterCriteria = {
+      id: { not: userId }, // Exclude the logged-in user
+    };
+
+    // Only consider users that match the preferred partner's gender
+    if (formattedLoggedInUser.preferredPartner) {
+      filterCriteria.basicDetails = {
+        gender: formattedLoggedInUser.preferredPartner,
+      };
+    }
+
     const recommendedProfiles = await prisma.user.findMany({
-      where: {
-        id: { not: userId }, // Exclude the logged-in user
-        basicDetails: {
-          gender: formattedLoggedInUser.gender === "Male" ? "Female" : "Male",
-        },
-        backgroundDetails: {
-          religion: formattedLoggedInUser.religion || undefined,
-          caste: formattedLoggedInUser.caste || undefined,
-        },
-        physicalAttributes: {
-          bodyType: formattedLoggedInUser.bodyType || undefined,
-          complexion: formattedLoggedInUser.complexion || undefined,
-        },
-      },
+      where: filterCriteria,
       include: {
         basicDetails: true,
         backgroundDetails: true,
-        physicalAttributes: true,
         additionalDetails: true,
+        connections: {
+          // Include the connection information
+          where: {
+            OR: [{ requesterId: userId }, { receiverId: userId }],
+          },
+        },
       },
     });
 
-    // Enhance profiles with compatibility score and return top 5 matches
-    const enhancedProfiles = await Promise.all(
-      recommendedProfiles.map(async (profile) => {
-        const profileData = await getUserDetailsForRecommendation(profile);
-        const compatibilityScore = calculateCompatibilityScore(
-          formattedLoggedInUser,
-          profileData
-        );
+    if (recommendedProfiles.length === 0) {
+      return new Response(
+        JSON.stringify({ message: "No matching profiles found." }),
+        { status: 404, headers: { "Content-Type": "application/json" } }
+      );
+    }
 
-        // Calculate age from date of birth
-        const age = profileData.dateOfBirth
-          ? calculateAge(profileData.dateOfBirth)
+    const profiles = await Promise.all(
+      recommendedProfiles.map(async (profile) => {
+        const name = `${profile.basicDetails.firstName || ""} ${
+          profile.basicDetails.lastName || ""
+        }`.trim();
+
+        const age = profile.basicDetails.dateOfBirth
+          ? calculateAge(profile.basicDetails.dateOfBirth)
           : null;
 
-        // Concatenate first name and last name for the name field
-        const name = `${profile.basicDetails?.firstName || ""} ${
-          profile.basicDetails?.lastName || ""
-        }`.trim();
+        const maritalStatus = profile.basicDetails.maritalStatus || "Unknown";
+        const bio = profile.additionalDetails?.bio || "No bio available";
+
+        let compatibilityScore = 0;
+
+        // Preferred partner is mandatory for matching
+        if (
+          formattedLoggedInUser.preferredPartner &&
+          profile.basicDetails.gender === formattedLoggedInUser.preferredPartner
+        ) {
+          compatibilityScore += 50; // Higher weight for preferred partner match
+        }
+
+        // Other fields are optional and can be used for additional compatibility
+        if (
+          formattedLoggedInUser.country &&
+          profile.basicDetails.country === formattedLoggedInUser.country
+        ) {
+          compatibilityScore += 20;
+        }
+
+        if (
+          formattedLoggedInUser.city &&
+          profile.basicDetails.city === formattedLoggedInUser.city
+        ) {
+          compatibilityScore += 10;
+        }
+
+        if (
+          formattedLoggedInUser.religion &&
+          profile.backgroundDetails?.religion === formattedLoggedInUser.religion
+        ) {
+          compatibilityScore += 10;
+        }
+
+        if (
+          formattedLoggedInUser.caste &&
+          profile.backgroundDetails?.caste === formattedLoggedInUser.caste
+        ) {
+          compatibilityScore += 10;
+        }
+
+        // Fetch the connection status between the logged-in user and the recommended profile
+        const connectionStatus = await findConnectionStatus(userId, profile.id);
 
         return {
           id: profile.id,
-          name: name || "Unknown",
-          age: age,
-          maritalStatus: profile.basicDetails?.maritalStatus || "Unknown",
-          bio: profile.additionalDetails?.bio || "No bio available",
-          compatibilityScore: compatibilityScore,
+          name,
+          age,
+          maritalStatus,
+          bio,
+          compatibilityScore,
+          connectionStatus,
         };
       })
     );
 
-    // Sort profiles by compatibility score (descending) and return top 5
-    const sortedProfiles = enhancedProfiles
-      .sort((a, b) => b.compatibilityScore - a.compatibilityScore)
-      .slice(0, 5);
+    const sortedProfiles = profiles.sort(
+      (a, b) => b.compatibilityScore - a.compatibilityScore
+    );
 
     return new Response(JSON.stringify(sortedProfiles), {
       status: 200,
@@ -118,7 +170,7 @@ export async function GET(req) {
     });
   } catch (error) {
     console.error("Error fetching recommendations:", error);
-    return new Response(JSON.stringify({ message: "Internal server error" }), {
+    return new Response(JSON.stringify({ message: "Internal server error." }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
     });

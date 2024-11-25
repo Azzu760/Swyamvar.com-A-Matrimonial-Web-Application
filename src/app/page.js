@@ -14,7 +14,7 @@ export default function App() {
 
     if (savedUserId && expiryDate && new Date() < new Date(expiryDate)) {
       // Valid session, redirect to dashboard
-      router.push(`/dashboard//${savedUserId}`);
+      router.push(`/dashboard/${savedUserId}`);
     } else {
       // Invalid or expired session, redirect to home
       localStorage.removeItem("userId");
@@ -22,8 +22,15 @@ export default function App() {
       router.push("/home");
     }
 
-    setLoading(false);
+    // Ensure loading remains until redirection is complete
+    const timeout = setTimeout(() => setLoading(false), 1000);
+
+    return () => clearTimeout(timeout);
   }, [router]);
 
-  return loading && <Loading />;
+  if (loading) {
+    return <Loading />;
+  }
+
+  return null;
 }

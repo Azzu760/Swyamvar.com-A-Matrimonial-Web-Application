@@ -42,6 +42,19 @@ export const religionOptions = [
 
 export const motherTongueOptions = [
   { value: "", label: "Select Mother Tongue" },
+  // Nepal-Specific Languages
+  { value: "Nepali", label: "Nepali" },
+  { value: "Maithili", label: "Maithili" },
+  { value: "Bhojpuri", label: "Bhojpuri" },
+  { value: "Tharu", label: "Tharu" },
+  { value: "Tamang", label: "Tamang" },
+  { value: "Newari", label: "Newari" },
+  { value: "Magar", label: "Magar" },
+  { value: "Awadhi", label: "Awadhi" },
+  { value: "Rai", label: "Rai" },
+  { value: "Limbu", label: "Limbu" },
+  { value: "Sherpa", label: "Sherpa" },
+  // Other South Asian Languages
   { value: "Hindi", label: "Hindi" },
   { value: "Bengali", label: "Bengali" },
   { value: "Telugu", label: "Telugu" },
@@ -57,6 +70,7 @@ export const motherTongueOptions = [
 
 export const communityOptions = [
   { value: "", label: "Select Community" },
+  // Original Community Options
   { value: "General", label: "General" },
   { value: "OBC", label: "OBC" },
   { value: "SC", label: "SC" },
@@ -65,6 +79,20 @@ export const communityOptions = [
   { value: "Kshatriya", label: "Kshatriya" },
   { value: "Vaishya", label: "Vaishya" },
   { value: "Other", label: "Other" },
+  // Nepal-Specific Communities
+  { value: "Chhetri", label: "Chhetri" },
+  { value: "Newar", label: "Newar" },
+  { value: "Magar", label: "Magar" },
+  { value: "Tamang", label: "Tamang" },
+  { value: "Rai", label: "Rai" },
+  { value: "Limbu", label: "Limbu" },
+  { value: "Sherpa", label: "Sherpa" },
+  { value: "Tharu", label: "Tharu" },
+  { value: "Gurung", label: "Gurung" },
+  { value: "Dalit", label: "Dalit" },
+  { value: "Muslim", label: "Muslim" },
+  { value: "Madhesi", label: "Madhesi" },
+  { value: "Kirant", label: "Kirant" },
 ];
 
 export const educationLevelOptions = [

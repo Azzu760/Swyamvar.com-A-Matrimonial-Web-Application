@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+
 import {
   FaHeart,
   FaFacebook,
@@ -7,14 +7,60 @@ import {
   FaInstagram,
   FaLinkedin,
 } from "react-icons/fa";
+import { useState } from "react";
 
 export default function Footer() {
   const [email, setEmail] = useState("");
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
 
-  const handleSubscribe = (e) => {
-    e.preventDefault();
-    console.log(`Subscribed with email: ${email}`);
-    setEmail("");
+  const openLinkInNewTab = (url) => {
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
+  const subscribeToNewsletter = async (email) => {
+    try {
+      const response = await fetch("/api/subscribe", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Subscription failed");
+      }
+
+      return data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const handleFormSubmit = async (event) => {
+    event.preventDefault();
+    setLoading(true);
+    setMessage("");
+    setError(false);
+
+    try {
+      const responseData = await subscribeToNewsletter(email);
+
+      if (responseData.message) {
+        setMessage(responseData.message);
+      } else {
+        setMessage("Thank you for subscribing!");
+      }
+    } catch (error) {
+      setError(true);
+      setMessage("Something went wrong. Please try again later.");
+      console.error("Error:", error);
+    }
+    setLoading(false);
   };
 
   return (
@@ -26,8 +72,8 @@ export default function Footer() {
             Subscribe to Our Newsletter
           </h2>
           <form
-            onSubmit={handleSubscribe}
             className="flex justify-center items-center"
+            onSubmit={handleFormSubmit}
           >
             <div className="flex">
               <input
@@ -43,11 +89,21 @@ export default function Footer() {
                 type="submit"
                 className="bg-red-500 px-4 py-2 sm:px-6 sm:py-3 rounded-r-full hover:bg-red-600 transition-colors duration-200"
                 aria-label="Subscribe to Newsletter"
+                disabled={loading}
               >
-                Subscribe
+                {loading ? "Subscribing..." : "Subscribe"}
               </button>
             </div>
           </form>
+          {message && (
+            <p
+              className={`mt-4 text-sm ${
+                error ? "text-red-500" : "text-green-500"
+              }`}
+            >
+              {message}
+            </p>
+          )}
         </div>
 
         {/* Logo and Company Name with Links */}
@@ -60,22 +116,40 @@ export default function Footer() {
             <h1 className="text-xl sm:text-2xl font-bold">Swyamvar.com</h1>
           </div>
           <nav className="flex flex-wrap justify-center space-x-2 sm:space-x-4 text-sm sm:text-base">
-            <a href="/pricing" className="hover:text-gray-400">
+            <a
+              onClick={() => openLinkInNewTab("/pricing")}
+              className="cursor-pointer hover:text-gray-400"
+            >
               Pricing
             </a>
-            <a href="/about" className="hover:text-gray-400">
+            <a
+              onClick={() => openLinkInNewTab("/about-us")}
+              className="cursor-pointer hover:text-gray-400"
+            >
               About Us
             </a>
-            <a href="/features" className="hover:text-gray-400">
+            <a
+              onClick={() => openLinkInNewTab("/features")}
+              className="cursor-pointer hover:text-gray-400"
+            >
               Features
             </a>
-            <a href="/help" className="hover:text-gray-400">
+            <a
+              onClick={() => openLinkInNewTab("/get-help")}
+              className="cursor-pointer hover:text-gray-400"
+            >
               Help Center
             </a>
-            <a href="/contact" className="hover:text-gray-400">
+            <a
+              onClick={() => openLinkInNewTab("/contact")}
+              className="cursor-pointer hover:text-gray-400"
+            >
               Contact Us
             </a>
-            <a href="/faqs" className="hover:text-gray-400">
+            <a
+              onClick={() => openLinkInNewTab("/faqs")}
+              className="cursor-pointer hover:text-gray-400"
+            >
               FAQs
             </a>
           </nav>
@@ -103,17 +177,26 @@ export default function Footer() {
           <div className="text-center text-xs sm:text-sm">
             <p>
               © 2024 Swyamvar.com. All rights reserved. |
-              <a href="/privacy" className="hover:text-gray-400">
+              <a
+                onClick={() => openLinkInNewTab("/privacy")}
+                className="cursor-pointer hover:text-gray-400"
+              >
                 {" "}
                 Privacy{" "}
               </a>{" "}
               |
-              <a href="/terms" className="hover:text-gray-400">
+              <a
+                onClick={() => openLinkInNewTab("/terms")}
+                className="cursor-pointer hover:text-gray-400"
+              >
                 {" "}
                 Terms{" "}
               </a>{" "}
               |
-              <a href="/sitemap" className="hover:text-gray-400">
+              <a
+                onClick={() => openLinkInNewTab("/sitemap")}
+                className="cursor-pointer hover:text-gray-400"
+              >
                 {" "}
                 Sitemap{" "}
               </a>

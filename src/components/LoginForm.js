@@ -2,49 +2,32 @@
 import React, { useState } from "react";
 import { AiFillEye, AiFillEyeInvisible } from "react-icons/ai";
 
-const LoginForm = ({ onSubmit, errors, register }) => {
+const LoginForm = ({ onSubmit, errors, register, notification }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
-
-  const handleFormSubmit = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-
-    // Simulate async submission (replace with actual API call)
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-
-    setIsLoading(false);
-    setIsSuccess(true);
-
-    setTimeout(() => {
-      setIsSuccess(false);
-      onSubmit({ rememberMe });
-    }, 2000);
-  };
 
   return (
     <div className="bg-dark-gray text-white w-full max-w-md p-8 rounded-md shadow-lg">
-      <h1 className="text-2xl font-bold mb-6 text-center transition-transform duration-700 ease-in-out transform">
-        Login
-      </h1>
+      <h1 className="text-2xl font-bold mb-6 text-center">Login</h1>
 
-      <form
-        onSubmit={handleFormSubmit}
-        className={`flex flex-col gap-3 transition-opacity duration-500 ease-in-out ${
-          isLoading || isSuccess
-            ? "opacity-50 pointer-events-none"
-            : "opacity-100"
-        }`}
-      >
+      {/* Display Notification */}
+      {notification.message && (
+        <div
+          className={`mb-4 p-3 rounded ${
+            notification.type === "error" ? "bg-red-500" : "bg-green-500"
+          } text-white text-center`}
+        >
+          {notification.message}
+        </div>
+      )}
+
+      <form onSubmit={onSubmit} className="flex flex-col gap-3">
         <label htmlFor="email">Email</label>
         <input
           id="email"
           type="email"
           {...register("email", { required: "Email is required." })}
           className="bg-transparent text-white px-3 py-2 rounded border border-gray-600 outline-none focus:border-gray-400"
-          disabled={isLoading || isSuccess}
         />
         {errors.email && <p className="text-red-500">{errors.email.message}</p>}
 
@@ -55,14 +38,11 @@ const LoginForm = ({ onSubmit, errors, register }) => {
             type={showPassword ? "text" : "password"}
             {...register("password", { required: "Password is required." })}
             className="bg-transparent text-white px-3 py-2 rounded border border-gray-600 outline-none focus:border-gray-400 w-full pr-10"
-            disabled={isLoading || isSuccess}
           />
           <button
             type="button"
             onClick={() => setShowPassword((prev) => !prev)}
             className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
-            aria-label={showPassword ? "Hide password" : "Show password"}
-            disabled={isLoading || isSuccess}
           >
             {showPassword ? <AiFillEyeInvisible /> : <AiFillEye />}
           </button>
@@ -78,7 +58,6 @@ const LoginForm = ({ onSubmit, errors, register }) => {
               checked={rememberMe}
               onChange={(e) => setRememberMe(e.target.checked)}
               className="form-checkbox h-4 w-4 text-blue-600"
-              disabled={isLoading || isSuccess}
             />
             <span className="ml-2 text-gray-300">Remember Me</span>
           </label>
@@ -92,28 +71,13 @@ const LoginForm = ({ onSubmit, errors, register }) => {
 
         <button
           type="submit"
-          className={`mt-6 w-full bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded transition-transform duration-500 ease-in-out ${
-            isLoading || isSuccess ? "animate-pulse" : "hover:scale-105"
-          }`}
-          disabled={isLoading || isSuccess}
+          className="mt-6 w-full bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded"
         >
-          {isLoading ? "Processing..." : "Login"}
+          Login
         </button>
-
-        {isLoading && (
-          <div className="flex justify-center items-center mt-3">
-            <div className="border-4 border-gray-300 border-t-transparent rounded-full w-6 h-6 animate-spin"></div>
-          </div>
-        )}
-
-        {isSuccess && (
-          <div className="mt-4 text-center text-green-500 font-semibold animate-pulse">
-            Login Successful!
-          </div>
-        )}
       </form>
 
-      <p className="mt-4 text-center transition-transform duration-700 ease-in-out">
+      <p className="mt-4 text-center">
         Don't have an account?{" "}
         <a href="/auth/sign-up" className="text-blue-400 hover:underline">
           Register here

@@ -3,6 +3,7 @@ const countryCodes = [
   { code: "+1", name: "United States" },
   { code: "+44", name: "United Kingdom" },
   { code: "+91", name: "India" },
+  { code: "+977", name: "Nepal" },
   { code: "+49", name: "Germany" },
   { code: "+33", name: "France" },
   { code: "+81", name: "Japan" },

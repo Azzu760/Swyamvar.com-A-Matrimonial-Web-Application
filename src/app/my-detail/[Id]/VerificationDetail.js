@@ -1,180 +1,81 @@
 import React, { useState } from "react";
-import { FaCloudUploadAlt } from "react-icons/fa"; // You can use any icon you prefer
 
 const VerificationDetail = ({ verified, userId }) => {
   const [isVerified, setIsVerified] = useState(verified);
-  const [file, setFile] = useState(null);
-  const [uploading, setUploading] = useState(false);
+  const [verificationText, setVerificationText] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
 
-  // Handle file input change
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setFile(file);
-    }
+  // Handle input change for the verification number
+  const handleInputChange = (e) => {
+    setVerificationText(e.target.value);
   };
 
-  // Handle file upload to the server
-  const uploadFile = async () => {
-    if (!file) {
-      setError("Please select an image to upload.");
+  // Handle form submission to update isVerified status
+  const handleSubmit = async () => {
+    if (isVerified) {
+      // Do not send a request if already verified
       return;
     }
 
-    setUploading(true);
+    setSubmitting(true);
     setError(null);
 
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("userId", userId);
-
     try {
-      const response = await fetch("/api/uploadVerificationImage", {
+      const response = await fetch("/api/verify-user", {
         method: "POST",
-        body: formData,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userId,
+          isVerified: true, // Set isVerified to true when submitting
+        }),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to upload file");
+        throw new Error("Failed to update verification status.");
       }
 
-      setIsVerified(true);
-
-      const verificationResponse = await fetch(
-        "/api/updateVerificationStatus",
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            userId,
-            isVerified: true,
-          }),
-        }
-      );
-
-      if (!verificationResponse.ok) {
-        throw new Error("Failed to update verification status");
-      }
+      const data = await response.json();
+      console.log("Verification status updated successfully:", data);
+      setIsVerified(true); // Update the local state to reflect the change
     } catch (error) {
-      console.error("Error during file upload:", error);
-      setError("There was an error uploading the image.");
+      console.error("Error during verification update:", error);
+      setError("Failed to update verification status. Please try again.");
     } finally {
-      setUploading(false);
+      setSubmitting(false);
     }
   };
 
   return (
     <div
-      style={{
-        padding: "20px",
-        borderRadius: "10px",
-        backgroundColor: isVerified ? "#e6f9e6" : "#fbe3e4",
-        color: isVerified ? "#4CAF50" : "#D32F2F",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        maxWidth: "400px",
-        margin: "auto",
-        boxShadow: "0px 4px 15px rgba(0, 0, 0, 0.1)",
-      }}
+      className={`p-6 rounded-lg ${
+        isVerified ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+      } max-w-md mx-auto shadow-md`}
     >
-      <h2
-        style={{
-          fontSize: "24px",
-          marginBottom: "16px",
-          fontWeight: "600",
-          textAlign: "center",
-        }}
-      >
+      <h2 className="text-2xl font-semibold text-center mb-4">
         {isVerified ? "Verified" : "Not Verified"}
       </h2>
 
       {!isVerified && (
-        <div style={{ width: "100%", textAlign: "center" }}>
-          {/* Custom File Input Styling */}
-          <label
-            htmlFor="file-upload"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              padding: "12px 24px",
-              backgroundColor: "#4CAF50",
-              color: "#fff",
-              fontSize: "16px",
-              borderRadius: "8px",
-              cursor: "pointer",
-              width: "100%",
-              textAlign: "center",
-              transition: "background-color 0.3s ease",
-              marginBottom: "16px",
-              boxSizing: "border-box",
-              justifyContent: "center", // Center the icon and text
-            }}
-          >
-            <FaCloudUploadAlt
-              style={{
-                marginRight: "8px", // Space between icon and text
-                fontSize: "20px",
-              }}
-            />
-            Choose Image for Verification
-          </label>
+        <div className="w-full text-center">
           <input
-            id="file-upload"
-            type="file"
-            accept="image/*"
-            onChange={handleFileChange}
-            style={{
-              display: "none", // Hide the default file input
-            }}
+            type="text"
+            placeholder="Enter Citizenship Number, Aadhaar Number, etc."
+            value={verificationText}
+            onChange={handleInputChange}
+            className="w-full p-3 text-lg rounded-lg mb-4 border border-gray-300"
           />
-          {file && (
-            <p
-              style={{
-                color: "#333",
-                fontSize: "14px",
-                marginTop: "8px",
-                fontWeight: "500",
-                textAlign: "center",
-              }}
-            >
-              Selected File: {file.name}
-            </p>
-          )}
           <button
-            onClick={uploadFile}
-            disabled={uploading}
-            style={{
-              padding: "12px 24px",
-              border: "none",
-              borderRadius: "8px",
-              backgroundColor: "#4CAF50",
-              color: "#fff",
-              fontSize: "16px",
-              cursor: "pointer",
-              width: "100%",
-              marginBottom: "16px",
-              transition: "background-color 0.3s",
-            }}
+            onClick={handleSubmit}
+            disabled={submitting}
+            className="w-full py-3 bg-green-500 text-white text-lg rounded-lg mb-4 transition-colors disabled:bg-gray-300"
           >
-            {uploading ? "Uploading..." : "Upload Image for Verification"}
+            {submitting ? "Submitting..." : "Submit Verification"}
           </button>
           {error && (
-            <p
-              style={{
-                color: "#D32F2F",
-                fontSize: "14px",
-                marginTop: "8px",
-                fontWeight: "500",
-                textAlign: "center",
-              }}
-            >
-              {error}
-            </p>
+            <p className="text-red-600 text-sm font-medium mb-4">{error}</p>
           )}
         </div>
       )}
@@ -182,17 +83,7 @@ const VerificationDetail = ({ verified, userId }) => {
       {isVerified && (
         <button
           onClick={() => setIsVerified(false)}
-          style={{
-            padding: "12px 24px",
-            border: "none",
-            borderRadius: "8px",
-            backgroundColor: "#f8d7da",
-            color: "#D32F2F",
-            fontSize: "16px",
-            cursor: "pointer",
-            width: "100%",
-            transition: "background-color 0.3s",
-          }}
+          className="w-full py-3 bg-red-200 text-red-600 text-lg rounded-lg transition-colors"
         >
           Unverify
         </button>

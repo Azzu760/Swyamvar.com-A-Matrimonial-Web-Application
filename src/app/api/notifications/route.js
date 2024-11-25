@@ -1,70 +1,127 @@
 import prisma from "../../../lib/prisma";
 
-// Handle GET requests
-export async function GET(req, { params, query }) {
-  const { userId } = query;
-
-  // Check if userId is provided in the query parameters
-  if (!userId) {
-    return new Response(JSON.stringify({ error: "User ID is required" }), {
-      status: 400,
-    });
-  }
-
+export async function GET(req) {
   try {
-    // Fetch notifications for the specific user, filtered by unread status
-    const notifications = await prisma.notification.findMany({
-      where: {
-        userId: parseInt(userId), // Parse userId to integer
-        read: false, // Only fetch unread notifications
+    const { searchParams } = new URL(req.url);
+    const userId = searchParams.get("userId");
+
+    if (!userId) {
+      return new Response(JSON.stringify({ message: "Missing userId" }), {
+        status: 400,
+      });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        receivedConnections: {
+          where: { status: "pending" },
+          select: { requesterId: true },
+        },
       },
-      orderBy: {
-        createdAt: "desc", // Newest notifications first
-      },
     });
 
-    // Format notifications if needed
-    const formattedNotifications = notifications.map((notification) => {
-      let message = "";
-      let statusClass = ""; // For status-based styling
+    if (!user) {
+      return new Response(JSON.stringify({ message: "User not found" }), {
+        status: 404,
+      });
+    }
 
-      // Assuming a notification type of "connection"
-      if (notification.type === "connection") {
-        switch (notification.status) {
-          case "pending":
-            message = `Connection request from ${notification.senderName} is pending.`;
-            statusClass = "text-yellow-500"; // Yellow for pending
-            break;
-          case "accepted":
-            message = `Connection request from ${notification.senderName} has been accepted.`;
-            statusClass = "text-green-500"; // Green for accepted
-            break;
-          case "declined":
-            message = `Connection request from ${notification.senderName} has been declined.`;
-            statusClass = "text-red-500"; // Red for declined
-            break;
-          default:
-            message = `Unknown status from ${notification.senderName}.`;
-            statusClass = "text-gray-500"; // Gray for unknown status
-        }
-      }
+    const notificationCount = user.receivedConnections.length;
 
-      return {
-        id: notification.id,
-        message,
-        statusClass,
-        createdAt: notification.createdAt,
-      };
-    });
+    if (notificationCount > 0) {
+      const receiverIds = user.receivedConnections.map(
+        (connection) => connection.requesterId
+      );
 
-    // Return formatted notifications as JSON response
-    return new Response(JSON.stringify(formattedNotifications), {
-      status: 200,
-    });
+      const receivers = await prisma.user.findMany({
+        where: { id: { in: receiverIds } },
+        select: {
+          id: true,
+          profilePicture: true,
+          basicDetails: {
+            select: {
+              firstName: true,
+              lastName: true,
+            },
+          },
+        },
+      });
+
+      const usersToConnect = receivers.map((receiver) => {
+        const fullName = `${receiver.basicDetails.firstName} ${receiver.basicDetails.lastName}`;
+        const profilePicture =
+          receiver.profilePicture || "https://example.com/default-profile.png";
+
+        return {
+          userId: receiver.id,
+          name: fullName,
+          profilePicture,
+          action: "Accept/Decline",
+        };
+      });
+
+      return new Response(
+        JSON.stringify({ usersToConnect, notificationCount }),
+        { status: 200 }
+      );
+    } else {
+      return new Response(
+        JSON.stringify({
+          message: "No pending connection requests.",
+          notificationCount: 0,
+        }),
+        { status: 200 }
+      );
+    }
   } catch (error) {
-    console.error("Error fetching notifications:", error);
+    console.error("Error fetching received connection requests:", error);
     return new Response(
-      JSON.stringify({ error: "Failed to fetch notifications" }),
+      JSON.stringify({
+        message: "Internal server error. Please try again later.",
+      }),
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(req) {
+  try {
+    const { requesterId, receiverId, action } = await req.json();
+
+    if (!requesterId || !receiverId || !action) {
+      return new Response(
+        JSON.stringify({ message: "Missing required fields" }),
+        {
+          status: 400,
+        }
+      );
+    }
+
+    const status = action === "accept" ? "accepted" : "declined";
+
+    // Update connection status in the database
+    await prisma.connection.updateMany({
+      where: {
+        requesterId,
+        receiverId,
+        status: "pending",
+      },
+      data: {
+        status,
+      },
+    });
+
+    return new Response(
+      JSON.stringify({ message: "Connection status updated successfully." }),
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("Error updating connection status:", error);
+    return new Response(
+      JSON.stringify({
+        message: "Internal server error. Please try again later.",
+      }),
       { status: 500 }
     );
   }

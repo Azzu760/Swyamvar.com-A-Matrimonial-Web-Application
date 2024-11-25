@@ -12,10 +12,12 @@ export default function Pricing() {
   return (
     <section className="py-10 sm:py-16 bg-black">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white">
-        <h2 className="text-3xl sm:text-5xl font-bold mb-2 sm:mb-4">Pricing</h2>
+        <h2 className="text-3xl sm:text-5xl font-bold mb-2 sm:mb-4">
+          Our Pricing Plans
+        </h2>
         <p className="text-base sm:text-lg mb-6 sm:mb-8">
-          Join our matrimonial service and find your perfect match. Choose the
-          plan that best suits your needs!
+          Flexible pricing to suit your needs. Choose the plan that’s right for
+          you and start connecting today!
         </p>
 
         {/* Toggle Button */}
