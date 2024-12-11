@@ -105,6 +105,7 @@ export async function GET(req) {
 
         const maritalStatus = profile.basicDetails.maritalStatus || "Unknown";
         const bio = profile.additionalDetails?.bio || "No bio available";
+        const isVerified = profile.isVerified || "";
 
         let compatibilityScore = 0;
 
@@ -150,6 +151,7 @@ export async function GET(req) {
 
         return {
           id: profile.id,
+          isVerified,
           name,
           age,
           maritalStatus,

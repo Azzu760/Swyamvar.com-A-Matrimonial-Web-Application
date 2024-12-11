@@ -6,6 +6,7 @@ import {
   fetchRecommendedProfiles,
   updateConnectionStatus,
 } from "../../utils/apiService";
+import { FaCheckCircle } from "react-icons/fa";
 
 function Discover({ userId }) {
   const router = useRouter();
@@ -105,7 +106,14 @@ function Discover({ userId }) {
               className="w-full h-40 rounded-t-lg object-cover mb-4"
             />
             <div className="flex justify-between w-full items-center mb-2">
-              <h2 className="text-xl font-semibold">{profile.name}</h2>
+              <h2 className="text-xl font-semibold flex items-center justify-center">
+                {profile.name}
+                {profile.isVerified && (
+                  <span className="ml-2 text-blue-500 font-bold">
+                    <FaCheckCircle />
+                  </span>
+                )}
+              </h2>
             </div>
             <p className="text-gray-400">{profile.age} years old</p>
             <p className="text-gray-400">
